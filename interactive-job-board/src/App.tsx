@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { JobProvider } from "./context/JobContext";
+import "./styles/globals.css";
 import Home from "./pages/Home";
 import JobDetails from "./pages/JobDetails";
 import Apply from "./pages/Apply";

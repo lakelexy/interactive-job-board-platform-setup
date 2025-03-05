@@ -6,8 +6,39 @@ body {
   @apply bg-gray-100 text-gray-900;
 }
 
+/* Ensure container consistency */
+.container {
+  @apply max-w-6xl mx-auto px-4;
+}
+
+/* General styling for form elements */
 input,
 select,
 textarea {
   @apply border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-400;
+}
+
+/* Button styles */
+.btn {
+  @apply px-4 py-2 rounded-md font-semibold transition duration-300;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700;
+}
+
+.btn-secondary {
+  @apply bg-gray-600 text-white hover:bg-gray-700;
+}
+
+/* Job Card Styling */
+.job-card {
+  @apply p-4 border rounded-md shadow-md bg-white hover:shadow-lg transition;
+}
+
+/* Responsive fixes */
+@media (max-width: 768px) {
+  .job-card {
+    @apply flex flex-col;
+  }
 }
