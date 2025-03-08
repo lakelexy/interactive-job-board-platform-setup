@@ -1,7 +1,7 @@
 // Use the environment variable if available; otherwise, use the fallback URL.
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
-  "https://jobboardbackend-production-0287.up.railway.app/api";
+  "https://jobboardbackend-production-0287.up.railway.app/api/auth/";
 
 /**
  * Generic fetch function to call any endpoint.
