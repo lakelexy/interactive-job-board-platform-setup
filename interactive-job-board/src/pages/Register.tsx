@@ -1,49 +1,75 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { authAPI } from "../api/api"; // Use your API abstraction
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
 
   // Form state
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [firstName, setFirstName] = useState<string>("");
-  const [lastName, setLastName] = useState<string>("");
-  const [phoneNumber, setPhoneNumber] = useState<string>("");
-  const [role, setRole] = useState<string>(""); // e.g., "employer" or "jobseeker"
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    phoneNumber: "",
+    role: "",
+  });
+
   const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); // Clear any previous error
+    setError("");
+    setSuccess("");
+    setLoading(true);
 
     try {
-      // Replace the URL with your actual register endpoint
-      const response = await axios.post(
-        "https://jobboardbackend-production-0287.up.railway.app/api/auth/register/",
-        {
-          email,
-          password,
-          first_name: firstName,
-          last_name: lastName,
-          phone_number: phoneNumber,
-          role,
-        }
-      );
+      const response = await authAPI.register({
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone_number: formData.phoneNumber,
+        role: formData.role,
+      });
 
-      // Check if the response contains the user data (adjust according to your API)
-      if (response.data && response.data.user) {
-        // Registration successful, navigate to login page
-        navigate("/login");
+      console.log("Registration success:", response);
+
+      if (response && response.user) {
+        setSuccess("Registration successful! Redirecting to login...");
+        setTimeout(() => navigate("/login"), 2000);
       } else {
-        setError("Registration failed. Please try again.");
+        setError("Unexpected response. Please try again.");
       }
     } catch (err: any) {
       console.error("Registration error:", err);
-      setError(
-        err.response?.data?.message || "Registration failed. Please try again."
-      );
+
+      // Handle Axios error response
+      if (err.response) {
+        console.error("Response data:", err.response.data);
+        console.error("Response status:", err.response.status);
+
+        // Display backend error messages
+        if (err.response.data?.message) {
+          setError(err.response.data.message);
+        } else if (err.response.data?.errors) {
+          setError(Object.values(err.response.data.errors).flat().join(", "));
+        } else {
+          setError("Registration failed. Please check your input.");
+        }
+      } else {
+        setError("Network error. Please try again later.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,102 +77,34 @@ const Register: React.FC = () => {
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Register</h1>
       <form onSubmit={handleRegister} className="space-y-4">
-        {/* First Name */}
-        <div>
-          <label
-            htmlFor="firstName"
-            className="block text-sm font-medium text-gray-700"
-          >
-            First Name
-          </label>
-          <input
-            id="firstName"
-            type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            placeholder="Enter your first name"
-            className="w-full border p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
-        </div>
+        {["firstName", "lastName", "email", "password", "phoneNumber"].map(
+          (field) => (
+            <div key={field}>
+              <label
+                htmlFor={field}
+                className="block text-sm font-medium text-gray-700"
+              >
+                {field
+                  .replace(/([A-Z])/g, " $1")
+                  .replace(/^./, (str) => str.toUpperCase())}
+              </label>
+              <input
+                id={field}
+                type={field === "password" ? "password" : "text"}
+                name={field}
+                value={formData[field as keyof typeof formData]}
+                onChange={handleChange}
+                placeholder={`Enter your ${field
+                  .replace(/([A-Z])/g, " $1")
+                  .toLowerCase()}`}
+                className="w-full border p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required
+              />
+            </div>
+          )
+        )}
 
-        {/* Last Name */}
-        <div>
-          <label
-            htmlFor="lastName"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Last Name
-          </label>
-          <input
-            id="lastName"
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            placeholder="Enter your last name"
-            className="w-full border p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
-        </div>
-
-        {/* Email */}
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            className="w-full border p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
-        </div>
-
-        {/* Password */}
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-            className="w-full border p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
-        </div>
-
-        {/* Phone Number */}
-        <div>
-          <label
-            htmlFor="phoneNumber"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Phone Number
-          </label>
-          <input
-            id="phoneNumber"
-            type="text"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="Enter your phone number"
-            className="w-full border p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
-        </div>
-
-        {/* Role */}
+        {/* Role Dropdown */}
         <div>
           <label
             htmlFor="role"
@@ -156,8 +114,9 @@ const Register: React.FC = () => {
           </label>
           <select
             id="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
             className="w-full border p-3 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             required
           >
@@ -167,13 +126,18 @@ const Register: React.FC = () => {
           </select>
         </div>
 
+        {/* Error & Success Messages */}
         {error && <p className="text-red-500">{error}</p>}
+        {success && <p className="text-green-500">{success}</p>}
 
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
+          disabled={loading}
+          className={`bg-blue-500 text-white px-4 py-2 rounded-md transition ${
+            loading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
+          }`}
         >
-          Register
+          {loading ? "Registering..." : "Register"}
         </button>
       </form>
     </div>

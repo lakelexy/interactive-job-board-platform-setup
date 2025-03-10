@@ -2,47 +2,44 @@
 import axios from "axios";
 
 const API_BASE_URL =
-  "https://jobboardbackend-production-0287.up.railway.app/api/auth/";
+  "https://jobboardbackend-production-0287.up.railway.app/api/auth";
 
 /**
- * Generate a token for registration.
- * (Assuming your backend requires a public or temporary token before registration.)
+ * Interfaces for API responses (optional but useful for TypeScript)
  */
-export const generateRegistrationToken = async (): Promise<string> => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/auth/token/`, {
-      // Provide public credentials or a pre-shared key if required by your backend
-      email: "public@example.com",
-      password: "publicpassword",
-    });
-    return response.data.token; // { token: "..." }
-  } catch (error) {
-    console.error("Error generating registration token:", error);
-    throw error;
-  }
-};
-
-/**
- * Register a new user using JWT for authorization.
- */
-export const register = async (
-  registrationData: {
+interface AuthResponse {
+  access: string;
+  refresh: string;
+  user: {
+    id: number;
     email: string;
-    password: string;
     first_name?: string;
     last_name?: string;
-    phone_number?: string;
     role?: string;
-  },
-  token: string
-) => {
+  };
+}
+
+interface ErrorResponse {
+  message: string;
+}
+
+/**
+ * Register a new user.
+ */
+export const register = async (registrationData: {
+  email: string;
+  password: string;
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+  role?: string;
+}): Promise<AuthResponse> => {
   try {
-    const response = await axios.post(
+    const response = await axios.post<AuthResponse>(
       `${API_BASE_URL}/auth/register/`,
       registrationData,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }
@@ -50,88 +47,118 @@ export const register = async (
     return response.data;
   } catch (error) {
     console.error("Registration error:", error);
-    throw error;
+    if (axios.isAxiosError(error)) {
+      throw error.response?.data || { message: "Registration failed" };
+    }
+    throw { message: "Unexpected error occurred" };
   }
 };
 
 /**
  * Login with email and password.
  */
-export const login = async (email: string, password: string) => {
+export const login = async (
+  email: string,
+  password: string
+): Promise<AuthResponse> => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/auth/token/`, {
-      email,
-      password,
-    });
-    // Expected response: { token: "JWT_TOKEN", user: { ... }, refresh: "REFRESH_TOKEN" }
+    const response = await axios.post<AuthResponse>(
+      `${API_BASE_URL}/auth/token/`,
+      {
+        email,
+        password,
+      }
+    );
     return response.data;
   } catch (error) {
     console.error("Login error:", error);
-    throw error;
+    if (axios.isAxiosError(error)) {
+      throw error.response?.data || { message: "Login failed" };
+    }
+    throw { message: "Unexpected error occurred" };
   }
 };
 
 /**
  * Refresh an expired JWT token.
  */
-export const refreshToken = async (refresh: string) => {
+export const refreshToken = async (refresh: string): Promise<AuthResponse> => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
-      refresh,
-    });
+    const response = await axios.post<AuthResponse>(
+      `${API_BASE_URL}/auth/token/refresh/`,
+      { refresh }
+    );
     return response.data;
   } catch (error) {
     console.error("Refresh token error:", error);
-    throw error;
+    if (axios.isAxiosError(error)) {
+      throw error.response?.data || { message: "Token refresh failed" };
+    }
+    throw { message: "Unexpected error occurred" };
   }
 };
 
 /**
  * Logout the current user.
  */
-export const logout = async (token: string) => {
+export const logout = async (token: string): Promise<void> => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/auth/logout/`, null, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data;
+    await axios.post(
+      `${API_BASE_URL}/auth/logout/`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
   } catch (error) {
     console.error("Logout error:", error);
-    throw error;
+    if (axios.isAxiosError(error)) {
+      throw error.response?.data || { message: "Logout failed" };
+    }
+    throw { message: "Unexpected error occurred" };
   }
 };
 
 /**
  * Verify the user's email.
  */
-export const verifyEmail = async (verificationData: { token: string }) => {
+export const verifyEmail = async (verificationData: {
+  token: string;
+}): Promise<void> => {
   try {
-    const response = await axios.post(
-      `${API_BASE_URL}/auth/verify_email/`,
-      verificationData
-    );
-    return response.data;
+    await axios.post(`${API_BASE_URL}/auth/verify_email/`, verificationData);
   } catch (error) {
     console.error("Email verification error:", error);
-    throw error;
+    if (axios.isAxiosError(error)) {
+      throw error.response?.data || { message: "Email verification failed" };
+    }
+    throw { message: "Unexpected error occurred" };
   }
 };
 
 /**
  * Get the authenticated user's profile.
  */
-export const getProfile = async (token: string) => {
+export const getProfile = async (
+  token: string
+): Promise<AuthResponse["user"]> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/auth/profile/`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await axios.get<AuthResponse["user"]>(
+      `${API_BASE_URL}/auth/profile/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     return response.data;
   } catch (error) {
     console.error("Profile fetch error:", error);
-    throw error;
+    if (axios.isAxiosError(error)) {
+      throw error.response?.data || { message: "Profile fetch failed" };
+    }
+    throw { message: "Unexpected error occurred" };
   }
 };

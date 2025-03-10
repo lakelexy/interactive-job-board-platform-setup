@@ -7,20 +7,20 @@ import Messages from "../pages/Messages";
 import Notifications from "../pages/Notifications";
 import Profile from "../pages/Profile";
 import Register from "../pages/Register";
-import PostJob from "@/pages/PostJob";
+import PostJob from "../pages/PostJob";
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/jobs" element={<Jobs />} />
       <Route path="/jobs/:id" element={<JobDetail />} />
       <Route path="/messages" element={<Messages />} />
-      <Route path="/login" element={<Login />} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/post-job" element={<PostJob />} />
-      <Route path="/register" element={<Register />} />
     </Routes>
   );
 };

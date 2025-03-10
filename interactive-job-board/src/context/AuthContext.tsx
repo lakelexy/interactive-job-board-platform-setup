@@ -1,12 +1,12 @@
 // src/context/AuthContext.tsx
-import React, { createContext, useState, ReactNode } from "react";
-import * as authAPI from "../api/auth";
+import React, { createContext, useState, useEffect, ReactNode } from "react";
+import { fetchData } from "../api/api";
 
 interface AuthContextType {
   user: any;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
   register: (data: { email: string; password: string }) => Promise<void>;
 }
 
@@ -20,31 +20,83 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.getItem("auth_token")
   );
 
-  const login = async (email: string, password: string) => {
-    const data = await authAPI.login(email, password);
-    setUser(data.user);
-    setToken(data.token);
-    localStorage.setItem("auth_token", data.token);
-  };
-
-  const logout = async () => {
-    if (token) {
-      await authAPI.logout(token);
-      setUser(null);
-      setToken(null);
-      localStorage.removeItem("auth_token");
+  /**
+   * Fetch the authenticated user profile after login.
+   */
+  const fetchUserProfile = async () => {
+    try {
+      const userData = await authFetch("profile", {}, true); // Ensure `profile` API exists
+      setUser(userData);
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
     }
   };
 
-  const register = async (data: { email: string; password: string }) => {
-    // Generate a registration token first
-    const regToken = await authAPI.generateRegistrationToken();
-    // Use the token to register
-    const response = await authAPI.register(data, regToken);
-    // Optionally, you might want to navigate to login after registration
-    // Here we simply log the response
-    console.log("Registration successful:", response);
+  /**
+   * Login function - Authenticates user and stores token.
+   */
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await authFetch("login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.token) {
+        setToken(response.token);
+        localStorage.setItem("auth_token", response.token);
+        fetchUserProfile(); // Fetch user data after login
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      throw error;
+    }
   };
+
+  /**
+   * Logout function - Clears token and resets user state.
+   */
+  const logout = () => {
+    localStorage.removeItem("auth_token");
+    setUser(null);
+    setToken(null);
+  };
+
+  /**
+   * Register function - Registers user.
+   */
+  const register = async (data: { email: string; password: string }) => {
+    try {
+      const response = await authFetch("register", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      console.log("Registration successful:", response);
+    } catch (error) {
+      console.error("Registration error:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Auto-logout if token expires.
+   */
+  useEffect(() => {
+    if (token) {
+      try {
+        const decodedToken = JSON.parse(atob(token.split(".")[1])); // Decode JWT payload
+        const expiryTime = decodedToken.exp * 1000; // Convert to milliseconds
+
+        if (expiryTime < Date.now()) {
+          console.warn("Token expired, logging out...");
+          logout();
+        }
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        logout();
+      }
+    }
+  }, [token]);
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, register }}>

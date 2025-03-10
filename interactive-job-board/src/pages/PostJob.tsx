@@ -1,18 +1,27 @@
 import { useState } from "react";
 
 const PostJob = () => {
-  const [title, setTitle] = useState("");
-  const [company, setCompany] = useState("");
-  const [location, setLocation] = useState("");
-  const [description, setDescription] = useState("");
-  const [loading, setLoading] = useState(false); // Track loading state
-  const [error, setError] = useState(""); // Track error message
-  const [success, setSuccess] = useState(""); // Track success message
+  const [formData, setFormData] = useState({
+    title: "",
+    company: "",
+    location: "",
+    description: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const jobData = { title, company, location, description };
-    setLoading(true); // Set loading state
+    setLoading(true);
 
     try {
       const response = await fetch(
@@ -20,73 +29,85 @@ const PostJob = () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(jobData),
+          body: JSON.stringify(formData),
         }
       );
 
       if (!response.ok) {
-        throw new Error("Failed to post job. Please try again.");
+        if (response.status === 404) {
+          throw new Error("Endpoint not found (404).");
+        } else if (response.status === 500) {
+          throw new Error("Internal server error (500).");
+        } else {
+          throw new Error(`Unexpected error: ${response.status}`);
+        }
       }
 
-      const data = await response.json();
-      setSuccess("Job posted successfully!"); // Show success message
-      setTitle(""); // Clear the form fields
-      setCompany("");
-      setLocation("");
-      setDescription("");
+      setSuccess("Job posted successfully!");
+      setFormData({
+        title: "",
+        company: "",
+        location: "",
+        description: "",
+      });
     } catch (error) {
-      setError(error.message || "Something went wrong!"); // Display error message
+      if (error.name === "TypeError") {
+        setError("Network error. Please check your internet connection.");
+      } else {
+        setError(error.message || "Something went wrong!");
+      }
     } finally {
-      setLoading(false); // Reset loading state
+      setLoading(false);
     }
   };
 
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold text-center mb-6">Post a Job</h1>
-      {error && <p className="text-red-500">{error}</p>}{" "}
-      {/* Display error message */}
-      {success && <p className="text-green-500">{success}</p>}{" "}
-      {/* Display success message */}
+      {error && <p className="text-red-500">{error}</p>}
+      {success && <p className="text-green-500">{success}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           className="border p-2 w-full"
           type="text"
+          name="title"
           placeholder="Job Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          value={formData.title}
+          onChange={handleChange}
           required
         />
         <input
           className="border p-2 w-full"
           type="text"
+          name="company"
           placeholder="Company Name"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
+          value={formData.company}
+          onChange={handleChange}
           required
         />
         <input
           className="border p-2 w-full"
           type="text"
+          name="location"
           placeholder="Location"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
+          value={formData.location}
+          onChange={handleChange}
           required
         />
         <textarea
           className="border p-2 w-full"
+          name="description"
           placeholder="Job Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={formData.description}
+          onChange={handleChange}
           required
         ></textarea>
         <button
           className="px-6 py-3 bg-blue-600 text-white rounded"
           type="submit"
-          disabled={loading} // Disable button while submitting
+          disabled={loading}
         >
-          {loading ? "Posting..." : "Post Job"}{" "}
-          {/* Display loading state on button */}
+          {loading ? "Posting..." : "Post Job"}
         </button>
       </form>
     </div>

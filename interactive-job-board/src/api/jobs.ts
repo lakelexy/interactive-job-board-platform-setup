@@ -16,54 +16,56 @@ export interface Job {
   datePosted?: string;
 }
 
-// API Base URL (Ensure it's correct)
+// API Base URL (Corrected)
 const API_URL =
-  "https://jobboardbackend-production-0287.up.railway.app/api/jobs/{id}/";
+  "https://jobboardbackend-production-0287.up.railway.app/api/jobs";
 
 // Fetch all jobs with optional filters
 export const fetchJobs = async (
-  filters: Record<string, string | number | boolean> = {}
+  filters: Record<string, string | number | boolean> = {},
+  token?: string
 ): Promise<Job[]> => {
   try {
     const response = await axios.get<Job[]>(API_URL, {
       params: filters,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}), // Include token if provided
+      },
     });
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error(
-        "Axios Error fetching jobs:",
-        error.response?.data || error.message
-      );
-    } else {
-      console.error("Unexpected Error fetching jobs:", error);
-    }
+    console.error(
+      "Error fetching jobs:",
+      axios.isAxiosError(error) ? error.response?.data || error.message : error
+    );
     throw error;
   }
 };
 
-// Fetch a single job by ID
-export const fetchJobById = async (id: string): Promise<Job> => {
+// Fetch a single job by ID (Fixed URL)
+export const fetchJobById = async (
+  id: string,
+  token?: string
+): Promise<Job> => {
   try {
     const response = await axios.get<Job>(`${API_URL}/${id}`, {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}), // Include token if provided
+      },
     });
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error(
-        "Axios Error fetching job details:",
-        error.response?.data || error.message
-      );
-    } else {
-      console.error("Unexpected Error fetching job details:", error);
-    }
+    console.error(
+      "Error fetching job details:",
+      axios.isAxiosError(error) ? error.response?.data || error.message : error
+    );
     throw error;
   }
 };
 
-// Post a new job (requires authentication token)
+// Post a new job (Requires authentication)
 export const postJob = async (jobData: Job, token: string): Promise<Job> => {
   try {
     const response = await axios.post<Job>(API_URL, jobData, {
@@ -74,14 +76,10 @@ export const postJob = async (jobData: Job, token: string): Promise<Job> => {
     });
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error(
-        "Axios Error posting job:",
-        error.response?.data || error.message
-      );
-    } else {
-      console.error("Unexpected Error posting job:", error);
-    }
+    console.error(
+      "Error posting job:",
+      axios.isAxiosError(error) ? error.response?.data || error.message : error
+    );
     throw error;
   }
 };
